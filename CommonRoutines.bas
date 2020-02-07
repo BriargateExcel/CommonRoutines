@@ -38,6 +38,35 @@ Option Explicit
 '   Added debug information to the RaiseError calls
 ' 10/25
 '   Converted ConvertDataToTable to a function that returns the table
+' 10/27/19
+'   Changed TryCopyRangeToArray to only calculate the areas if copying only the visible rows
+' 10/29/19
+'   Added ShowAll
+' 11/1/19
+'   Tweaked range selection in TryCopyTableToArrayWithMapping to make it simpler
+' 11/5/19
+'   Added ResizeTable
+' 11/6/19
+'   Deleted TryCopyTableToArray
+'   Changed TryCopyRangeToArray to TryCopyFilteredRangeToArray
+' 11/15/19
+'   Added ShowProgress
+' 12/9/19
+'   Added SetDict and TrySetTableAndRange
+' 12/10/19
+'   Deleted SetDict, Copy with Mapping routine
+' 1/1/2020
+'   Changed CleanTwoDecimal to format only the DatabodyRange and omit the HeaderRange
+' 1/10/20
+'   Added CleanDollars
+' 1/19/20
+'   Added MonthDiff
+' 1/24/20
+'   Added PrintString
+' 1/26/20
+'   Added qq for quote marks to PrintString
+' 2/7/20
+'   Added ExposeAllSheets
 
 Private Const Module_Name As String = "CommonRoutines."
 
@@ -256,7 +285,7 @@ Public Function BuildFullTracePath( _
        Optional ByVal FilePath As String = vbNullString _
        ) As String
 
-   ' This routine builds a full pathname from FileName and FilePath
+    ' This routine builds a full pathname from FileName and FilePath
     ' if FilePath = vbNullString, uses the ActiveWorkbook's path
     ' Returns a string with the full path
 
@@ -327,8 +356,12 @@ Public Sub ClearTable(ByVal LstObj As ListObject)
 
 End Sub ' ClearTable
 
-Public Function FindLastRow(ByVal ColLetter As String, ByVal RowNumber As Long, _
-                            ByVal Sheet As Worksheet) As Long
+Public Function FindLastRow( _
+    ByVal ColLetter As String, _
+    ByVal RowNumber As Long, _
+    ByVal Sheet As Worksheet _
+    ) As Long
+    
     Dim RegionRow As Long: RegionRow = Sheet.Range(ColLetter & RowNumber).CurrentRegion.Rows.Count
     Dim ColumnRow As Long: ColumnRow = Sheet.Range(ColLetter & Sheet.Rows.Count).End(xlUp).Row
     Dim ColumnNumber As Long: ColumnNumber = Sheet.Range(ColLetter & 1).Column
@@ -454,10 +487,9 @@ ErrorHandler:
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
 End Function ' GetASheet
 
-Public Function TryCopyRangeToArray( _
+Public Function TryCopyFilteredRangeToArray( _
        ByVal Rng As Range, _
-       ByRef Result As Variant, _
-       Optional ByVal VisibleOnly As Boolean = False _
+       ByRef Result As Variant _
        ) As Boolean
 
     ' This routine converts the data in Rng to a 2D array
@@ -466,11 +498,12 @@ Public Function TryCopyRangeToArray( _
     ' Returns the array from the rng
     ' Returns True if successful
     
-    Const RoutineName As String = Module_Name & "TryCopyRangeToArray"
+    Const RoutineName As String = Module_Name & "TryCopyFilteredRangeToArray"
     On Error GoTo ErrorHandler
     
-    TryCopyRangeToArray = True
+    TryCopyFilteredRangeToArray = True
     
+    ' Exclude the hidden rows
     Dim SplitArray As Variant
     SplitArray = Split(Rng.Address, "$")
     
@@ -492,43 +525,37 @@ Public Function TryCopyRangeToArray( _
     Dim TableArray As Variant
     TableArray = Rng
     
-    If VisibleOnly Then
-        ' Exclude the hidden rows
-        Dim NumberOfRows As Long
-        NumberOfRows = 0
-        
-        Dim IndividualRange As Range
-        For Each IndividualRange In Rng.Areas
-            SplitArray = Split(IndividualRange, "$")
+    Dim NumberOfRows As Long
+    NumberOfRows = 0
+    
+    Dim IndividualRange As Range
+    For Each IndividualRange In Rng.Areas
+        SplitArray = Split(IndividualRange, "$")
 
-            StartRow = SplitArray(2)
+        StartRow = SplitArray(2)
 
-            StopRow = SplitArray(4)
+        StopRow = SplitArray(4)
 
-            Dim I As Long
-            For I = StartRow To StopRow
-                Dim J As Long
-                For J = StartColumn To StopColumn
-                    pAry(NumberOfRows, J - 1) = TableArray(I, J)
-                Next J
-
-                NumberOfRows = NumberOfRows + 1
-            Next I
-        Next IndividualRange
-        
-        Dim tAry() As Variant
-        ReDim tAry(NumberOfRows - 1, StopColumn - StartColumn)
-        
-        For I = 0 To NumberOfRows - 1
-            For J = 0 To StopColumn - StartColumn
-                tAry(I, J) = pAry(I, J)
+        Dim I As Long
+        For I = StartRow To StopRow
+            Dim J As Long
+            For J = StartColumn To StopColumn
+                pAry(NumberOfRows, J - 1) = TableArray(I, J)
             Next J
+
+            NumberOfRows = NumberOfRows + 1
         Next I
-        Result = tAry
-    Else
-        ' Including any hidden rows
-        Result = Rng
-    End If
+    Next IndividualRange
+    
+    Dim tAry() As Variant
+    ReDim tAry(NumberOfRows - 1, StopColumn - StartColumn)
+    
+    For I = 0 To NumberOfRows - 1
+        For J = 0 To StopColumn - StartColumn
+            tAry(I, J) = pAry(I, J)
+        Next J
+    Next I
+    Result = tAry
     
 Done:
     Exit Function
@@ -537,42 +564,9 @@ ErrorHandler:
                 "Routine", RoutineName, _
                 "Error Number", Err.Number, _
                 "Error Description", Err.Description, _
-                "Search Range", Rng.Address, _
-                "Visible Only?", VisibleOnly
+                "Search Range", Rng.Address
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
-End Function ' TryCopyRangeToArray
-
-Public Function TryCopyTableToArray( _
-       ByVal Tbl As ListObject, _
-       ByVal VisibleOnly As Boolean, _
-       ByRef Result As Variant _
-       ) As Boolean
-
-    ' This routine copies a table to an array
-    
-    Const RoutineName As String = Module_Name & "TryCopyTableToArray"
-    On Error GoTo ErrorHandler
-    
-    If TryCopyRangeToArray(Tbl.Range, Result, VisibleOnly) Then
-        TryCopyTableToArray = True
-    Else
-        TryCopyTableToArray = False
-        ReportError "Error copying table to array", _
-                    "Routine", RoutineName
-        GoTo Done
-    End If
-
-Done:
-    Exit Function
-ErrorHandler:
-    ReportError "Exception raised", _
-                "Routine", RoutineName, _
-                "Error Number", Err.Number, _
-                "Error Description", Err.Description, _
-                "Table", Tbl.Name, _
-                "Visible Only?", VisibleOnly
-    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
-End Function ' TryCopyTableToArray
+End Function ' TryCopyFilteredRangeToArray
 
 Public Function TryFindCellInSheet( _
        ByVal Target As String, _
@@ -620,29 +614,29 @@ ErrorHandler:
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
 End Function ' TryFindCellInSheet
 
-Public Function TurnOffAutomaticProcessing()
+Public Sub TurnOffAutomaticProcessing()
 
     ' This routine turns off all the automatic processing that slows things down
     
-    Const RoutineName As String = Module_Name & "SubTemplate"
+    Const RoutineName As String = Module_Name & "TurnOffAutomaticProcessing"
     On Error GoTo ErrorHandler
     
-    Application.ScreenUpdating = False
-    Application.EnableEvents = False
-    Application.Calculation = xlManual
     Application.DisplayAlerts = False
+    Application.Calculation = xlManual
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
 
 Done:
-    Exit Function
+    Exit Sub
 ErrorHandler:
     ReportError "Exception raised", _
                 "Routine", RoutineName, _
                 "Error Number", Err.Number, _
                 "Error Description", Err.Description
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
-End Function ' SubTemplate
+End Sub      ' TurnOffAutomaticProcessing
 
-Public Function TurnOnAutomaticProcessing()
+Public Sub TurnOnAutomaticProcessing()
 
     ' This routine turns on all the automatic processing that slows things down
     ' Reverses the things that were turned off in TurnOffAutomaticProcessing
@@ -654,17 +648,18 @@ Public Function TurnOnAutomaticProcessing()
     Application.Calculation = xlAutomatic
     Application.EnableEvents = True
     Application.ScreenUpdating = True
+    
     Application.StatusBar = False
 
 Done:
-    Exit Function
+    Exit Sub
 ErrorHandler:
     ReportError "Exception raised", _
                 "Routine", RoutineName, _
                 "Error Number", Err.Number, _
                 "Error Description", Err.Description
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
-End Function ' TurnOnAutomaticProcessing
+End Sub      ' TurnOnAutomaticProcessing
 
 Public Function TryFindTableInWorksheet( _
        ByVal Wksht As Worksheet, _
@@ -728,63 +723,6 @@ ErrorHandler:
     On Error GoTo 0
 End Function ' CheckInRange
 
-Public Function TryCopyTableToArrayWithMapping( _
-       ByVal OldTbl As ListObject, _
-       ByVal Mapping As Variant, _
-       ByRef NewAry As Variant _
-       ) As Boolean
-        
-    ' This routine copies all the data from one table and rearranges it based on the Mapping array
-    ' Mapping is an array of arrays that starts at 0 in all dimensions
-
-    Const RoutineName As String = Module_Name & "TryCopyTableToArrayWithMapping"
-    On Error GoTo ErrorHandler
-    
-    TryCopyTableToArrayWithMapping = True
-    
-    Dim Ary As Variant
-    Ary = OldTbl.Parent.Range(OldTbl.Range.Address)
-    
-    ReDim NewAry(1 To UBound(Ary, 1) - 1, 1 To UBound(Mapping, 1) + 1)
-    
-    Dim I As Long
-    Dim J As Long
-    Dim OldCol As Long
-    
-    ' Loop through the rows of the mapping array
-    For I = 0 To UBound(Mapping, 1)
-        ' Loop across the columns of each row of the maping array
-        For J = 1 To UBound(Ary, 2)
-            If Ary(1, J) = Mapping(I)(0) Then
-                OldCol = J
-                Exit For
-            End If
-        Next J
-        
-        Dim NewCol As Long
-        For J = 0 To UBound(Mapping, 1)
-            If Ary(1, OldCol) = Mapping(J)(0) Then
-                NewCol = J + 1
-                Exit For
-            End If
-        Next J
-        
-        For J = 1 To UBound(Ary, 1) - 1
-            NewAry(J, NewCol) = Ary(J + 1, OldCol)
-        Next J
-    Next I
-    
-Done:
-    Exit Function
-ErrorHandler:
-    ReportError "Exception raised", _
-                "Routine", RoutineName, _
-                "Error Number", Err.Number, _
-                "Error Description", Err.Description, _
-                "Old Table", OldTbl.Name
-    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
-End Function ' TryCopyTableToArrayWithMapping
-
 Public Sub CleanTwoDecimalData( _
        ByVal Tbl As ListObject, _
        ByVal ColumnNumber As Long)
@@ -794,10 +732,17 @@ Public Sub CleanTwoDecimalData( _
     Const RoutineName As String = Module_Name & "CleanTwoDecimalData"
     On Error GoTo ErrorHandler
     
-    Dim Rng As Range
-    Set Rng = Tbl.ListColumns(ColumnNumber).Range
-    Rng.Style = "Comma"
+    Dim ColumnRange As Range
+    Set ColumnRange = Tbl.ListColumns(ColumnNumber).Range
     
+    Dim OffsetRange As Range
+    Set ColumnRange = ColumnRange.Offset(1, 0)
+    
+    Dim FormatRange As Range
+    Set FormatRange = Application.Intersect(ColumnRange, ColumnRange)
+    
+    FormatRange.Style = "Comma"
+
 Done:
     Exit Sub
 ErrorHandler:
@@ -808,6 +753,30 @@ ErrorHandler:
                 "Table", Tbl.Name
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
 End Sub ' CleanTwoDecimalData
+
+Public Sub CleanDollars( _
+       ByVal Tbl As ListObject, _
+       ByVal ColumnNumber As Long)
+
+    ' This routine sets the column to dollar format
+
+    Const RoutineName As String = Module_Name & "CleanDollars"
+    On Error GoTo ErrorHandler
+
+    Dim Rng As Range
+    Set Rng = Tbl.ListColumns(ColumnNumber).Range
+    Rng.Style = "Currency"
+
+Done:
+    Exit Sub
+ErrorHandler:
+    ReportError "Exception raised", _
+                "Routine", RoutineName, _
+                "Error Number", Err.Number, _
+                "Error Description", Err.Description, _
+                "Table", Tbl.Name
+    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
+End Sub ' CleanDollars
 
 Public Sub CleanToLeftAlignment( _
        ByVal Tbl As ListObject, _
@@ -833,6 +802,183 @@ ErrorHandler:
     RaiseError Err.Number, Err.Source, RoutineName, Err.Description
 End Sub ' CleanToLeftAlignment
 
+Public Sub ShowAll(ByVal Tbl As ListObject)
+On Error GoTo ErrorHandler
+    Dim CurrentSheet As Worksheet
+    Set CurrentSheet = ActiveWorkbook.ActiveSheet
+    
+    Dim Wksht As Worksheet
+    Set Wksht = Tbl.Parent
+    
+    Dim Vis As Boolean
+    Vis = Wksht.Visible
+    
+    Wksht.Visible = True
+    Wksht.Activate
+    
+    Wksht.ShowAllData ' Raises an error if the table is not filtered
+ErrorHandler: ' Fall through the errorhandler regardless
+    Tbl.DataBodyRange(1, 1).Select
+    Wksht.Visible = Vis
+    CurrentSheet.Activate
+End Sub ' ShowAll
 
+Public Sub ResizeTable(ByVal Tbl As ListObject)
 
+    ' This routine resizes a table by deleting any empty rows at the bottom of the table
+    
+    Const RoutineName As String = Module_Name & "ResizeTable"
+    On Error GoTo ErrorHandler
+    
+    Dim LastRow As Long
+    LastRow = FindLastRow("A", 1, Tbl.Parent)
+    
+    Dim LastColumn As Long
+    LastColumn = FindLastColumn(1, Tbl.Parent)
+    
+    Dim RangeString As String
+    RangeString = "$A$1:$" & ConvertColumnNumberToLetter(LastColumn) & "$" & LastRow
+    
+    Tbl.Resize Range(RangeString)
+
+Done:
+    Exit Sub
+ErrorHandler:
+    ReportError "Exception raised", _
+                "Routine", RoutineName, _
+                "Error Number", Err.Number, _
+                "Error Description", Err.Description
+    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
+End Sub ' ResizeTable
+
+Public Sub ShowProgress( _
+    ByVal Msg As String, _
+    Optional ByVal Interval As Long = 0, _
+    Optional ByVal Counter As Long = 0, _
+    Optional ByVal MaxValue As Long = 0)
+
+    ' This routine publishes a status message in the statusbar
+    
+    Const RoutineName As String = Module_Name & "ShowProgress"
+    On Error GoTo ErrorHandler
+    
+    If Interval = 0 Then
+        Application.StatusBar = Msg
+    Else
+        If Counter Mod Interval = 0 Then
+            DoEvents
+            Application.StatusBar = Msg & ": " & Counter & "/" & MaxValue
+        End If
+    End If
+
+Done:
+    Exit Sub
+ErrorHandler:
+    ReportError "Exception raised", _
+                "Routine", RoutineName, _
+                "Error Number", Err.Number, _
+                "Error Description", Err.Description
+    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
+End Sub ' ShowProgress
+
+Public Function TrySetTableAndRange( _
+       ByVal NewTable As ListObject, _
+       ByVal DefaultTable As ListObject, _
+       ByVal TableName As String, _
+       ByRef ThisTable As ListObject, _
+       ByVal NewRange As Range, _
+       ByRef ThisRange As Range, _
+       ByVal NumCols As Long _
+       ) As Boolean
+       
+       ' Set up table and range to point properly
+
+    Const RoutineName As String = Module_Name & "TrySetTableAndRange"
+    On Error GoTo ErrorHandler
+    
+    ' Assume success
+    TrySetTableAndRange = True
+    
+    If NewTable Is Nothing Then
+        If NewRange Is Nothing Then
+            Set ThisTable = DefaultTable
+        Else
+            Set ThisTable = NewRange.Parent.ListObjects.Add( _
+                xlSrcRange, _
+                Range(Cells(1, 1), Cells(2, NumCols)), _
+                , xlYes)
+            ThisTable.Name = TableName
+        End If
+    Else
+        Set ThisTable = DefaultTable
+    End If
+    
+    If Left$(ThisTable.Range.Address, 4) = "$A$1" Then
+        Set ThisRange = ThisTable.Parent.Range("$A$2")
+    Else
+        ReportError "Error setting range", "Routine", RoutineName
+        TrySetTableAndRange = False
+        GoTo Done
+    End If
+    
+Done:
+    Exit Function
+ErrorHandler:
+    ReportError "Exception raised", _
+                "Routine", RoutineName, _
+                "Error Number", Err.Number, _
+                "Error Description", Err.Description
+    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
+End Function ' TrySetTableAndRange
+
+Public Function MonthDiff( _
+    ByVal BeginDate As Date, _
+    ByVal EndDate As Date) As Long
+    MonthDiff = ((Year(EndDate) - Year(BeginDate)) * 12) + Month(EndDate) - Month(BeginDate)
+End Function ' MonthDiff
+
+Public Sub ExposeAllSheets()
+    Dim WS As Worksheet
+    For Each WS In ActiveWorkbook.Worksheets
+        WS.Visible = xlSheetVisible
+    Next WS
+End Sub
+
+Public Function PrintString( _
+    ByVal Text As String, _
+    ParamArray varStrings() As Variant _
+    ) As String
+    
+    ' This routine populates a string based on the parameters provided
+    ' e.g.
+    ' Text = "This is a %1 of the %2 routine
+    ' Call = PrintString Text, "Test", "PrintString"
+    ' Result = "This is a Test of the PrintString routine"
+
+    Const RoutineName As String = Module_Name & "PrintString"
+    On Error GoTo ErrorHandler
+    
+    Text = Replace(Text, "qq", """")
+    Text = Replace(Text, "QQ", """")
+
+    Dim I As Long
+    For I = LBound(varStrings) To UBound(varStrings)
+        If TypeName(varStrings(I)) <> "String" Then
+            Err.Raise 5, "Invalid item passed as token. The string is parameter no [" & CStr(I) & "]." & " PrintString"
+            GoTo Continue
+        End If
+    Text = Replace(Text, "%" & CStr(I + 1), varStrings(I))
+Continue:
+    Next
+    PrintString = Text
+Done:
+    Exit Function
+ErrorHandler:
+    ReportError "Exception raised", _
+                "Routine", RoutineName, _
+                "Error Number", Err.Number, _
+                "Error Description", Err.Description, _
+                "Text", Text
+    RaiseError Err.Number, Err.Source, RoutineName, Err.Description
+End Function ' PrintString
 
