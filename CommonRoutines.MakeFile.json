@@ -1,0 +1,48 @@
+{
+	"VBAProject Name": "CommonRoutines",
+	"Base Path": "C:\\Users\\DickDye\\Documents\\Excel\\CommonRoutines",
+	"Module Paths": {
+		"GitForm": "GitForm.frm",
+		"clsVBECmdHandler": "clsVBECmdHandler.cls",
+		"CodeImportExportMenus": "CodeImportExportMenus.bas",
+		"CodeUtil": "CodeUtil.bas",
+		"DocumentProperties": "DocumentProperties.bas",
+		"CodeImportExport": "CodeImportExport.bas",
+		"JsonConverter": "JsonConverter.bas",
+		"PerformanceClass": "PerformanceClass.cls",
+		"PerformanceRoutines": "PerformanceRoutines.bas",
+		"clsConfiguration": "clsConfiguration.cls",
+		"ConditionalFormatBackup": "ConditionalFormatBackup.bas",
+		"ErrorRoutines": "ErrorRoutines.bas",
+		"Error_WarningRoutines": "Error_WarningRoutines.bas",
+		"Table": "Table.bas",		
+		"ErrorFileClass": "ErrorFileClass.cls",
+		"iTable": "iTable.cls",		
+		"MessageFileClass": "MessageFileClass.cls",		
+		"CommonRoutines": "CommonRoutines.bas",
+		"Templates": "Templates.bas"
+	},
+	"References": [
+		{
+			"Name": "VBIDE",
+			"Description": "Microsoft Visual Basic for Applications Extensibility 5.3",
+			"GUID": "{0002E157-0000-0000-C000-000000000046}",
+			"Major": 5,
+			"Minor": 3
+		},
+		{
+			"Name": "Scripting",
+			"Description": "Microsoft Scripting Runtime",
+			"GUID": "{420B2830-E718-11CF-893D-00A0C9054228}",
+			"Major": 1,
+			"Minor": 0
+		},
+		{
+			"Name": "DSOFile",
+			"Description": "DSO OLE Document Properties Reader 2.1",
+			"GUID": "{58968145-CF00-4341-995F-2EE093F6ABA3}",
+			"Major": 2,
+			"Minor": 1
+		}
+	]
+}
