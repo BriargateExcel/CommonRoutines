@@ -134,6 +134,7 @@ Done:
     Exit Sub
 ErrorHandler:
     DisplayError RoutineName
+    CloseErrorFile
 End Sub                                          ' MakeConfigFile
 
 Public Sub Export()
@@ -235,6 +236,7 @@ Done:
     Exit Sub
 ErrorHandler:
     DisplayError RoutineName
+    CloseErrorFile
 End Sub                                          ' Export
 
 Public Sub Import()
@@ -331,6 +333,7 @@ Done:
     Exit Sub
 ErrorHandler:
     DisplayError RoutineName
+    CloseErrorFile
 End Sub                                          ' Import
 
 Private Function GetProject(ByVal TitleText As String) As VBProject

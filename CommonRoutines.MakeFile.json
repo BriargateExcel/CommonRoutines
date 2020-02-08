@@ -2,14 +2,11 @@
 	"VBAProject Name": "CommonRoutines",
 	"Base Path": "C:\\Users\\DickDye\\Documents\\Excel\\CommonRoutines",
 	"Module Paths": {
-		".gitconfig": ".gitconfig",
-		".gitignore": ".gitignore",
 		"clsConfiguration": "clsConfiguration.cls",
 		"clsVBECmdHandler": "clsVBECmdHandler.cls",
 		"CodeImportExport": "CodeImportExport.bas",
 		"CodeImportExportMenus": "CodeImportExportMenus.bas",
 		"CommonRoutines": "CommonRoutines.bas",
-		"CommonRoutines.MakeFile.json": "CommonRoutines.MakeFile.json",
 		"ConditionalFormatBackup": "ConditionalFormatBackup.bas",
 		"DocumentProperties": "DocumentProperties.bas",
 		"Error_WarningRoutines": "Error_WarningRoutines.bas",
@@ -19,9 +16,8 @@
 		"MessageFileClass": "MessageFileClass.cls",		
 		"PerformanceClass": "PerformanceClass.cls",
 		"PerformanceRoutines": "PerformanceRoutines.bas",
-		"README.md": "README.md",		
 		"Table": "Table.bas",		
-		"Templates": "Templates.bas"'
+		"Templates": "Templates.bas"
 	},
 	"References": [
 		{
