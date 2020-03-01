@@ -199,9 +199,6 @@ Public Function TryGetFolderPath( _
     
     TryGetFolderPath = True
     
-    Dim FSO As FileSystemObject
-    Set FSO = New Scripting.FileSystemObject
-
     With Application.FileDialog(msoFileDialogFolderPicker)
         .InitialFileName = InitialFolder
         .Title = "Select the 3T Folder"
@@ -735,7 +732,6 @@ Public Sub CleanTwoDecimalData( _
     Dim ColumnRange As Range
     Set ColumnRange = Tbl.ListColumns(ColumnNumber).Range
     
-    Dim OffsetRange As Range
     Set ColumnRange = ColumnRange.Offset(1, 0)
     
     Dim FormatRange As Range

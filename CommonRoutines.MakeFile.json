@@ -1,23 +1,12 @@
 {
 	"VBAProject Name": "CommonRoutines",
-	"Base Path": "C:\\Users\\DickDye\\Documents\\Excel\\CommonRoutines",
+	"Base Path": "C:\\Users\\DickDye\\Documents\\Excel\\Common\\CommonRoutines",
 	"Module Paths": {
-		"clsConfiguration": "clsConfiguration.cls",
-		"clsVBECmdHandler": "clsVBECmdHandler.cls",
-		"CodeImportExport": "CodeImportExport.bas",
-		"CodeImportExportMenus": "CodeImportExportMenus.bas",
 		"CommonRoutines": "CommonRoutines.bas",
-		"ConditionalFormatBackup": "ConditionalFormatBackup.bas",
-		"DocumentProperties": "DocumentProperties.bas",
 		"Error_WarningRoutines": "Error_WarningRoutines.bas",
-		"GitForm": "GitForm.frm",
-		"iTable": "iTable.cls",		
-		"JsonConverter": "JsonConverter.bas",
-		"MessageFileClass": "MessageFileClass.cls",		
-		"PerformanceClass": "PerformanceClass.cls",
-		"PerformanceRoutines": "PerformanceRoutines.bas",
-		"Table": "Table.bas",		
-		"Templates": "Templates.bas"
+		"iTable": "iTable.cls",
+		"MessageFileClass": "MessageFileClass.cls",
+		"Table": "Table.bas"
 	},
 	"References": [
 		{

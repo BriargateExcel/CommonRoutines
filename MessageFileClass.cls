@@ -58,12 +58,16 @@ Option Explicit
 
 Private Const Module_Name As String = "MessageFileClass."
 
-Private pMessageStream As TextStream
-Private pStreamName As String
-Private pMessageFolderPath As String
+Private Type MessageType
+    MessageStream As TextStream
+    StreamName As String
+    MessageFolderPath As String
+End Type
+
+Private This As MessageType
 
 Public Property Get MessageFolderPath() As String
-    MessageFolderPath = pMessageFolderPath
+    MessageFolderPath = This.MessageFolderPath
 End Property
 
 Public Sub WriteMessageLine( _
@@ -79,12 +83,12 @@ Public Sub WriteMessageLine( _
     
     FolderName = IIf(FolderName = vbNullString, StreamName, FolderName)
     
-    If pMessageStream Is Nothing Then
+    If This.MessageStream Is Nothing Then
         CreateMessageStream StreamName, FolderName, OverWrite
-        pStreamName = StreamName
+        This.StreamName = StreamName
     End If
     
-    pMessageStream.WriteLine Message
+    This.MessageStream.WriteLine Message
     
 Done:
     Exit Sub
@@ -105,12 +109,12 @@ Public Sub WriteBlankMessageLines( _
     Const RoutineName As String = Module_Name & "WriteBlankMessageLines"
     On Error GoTo ErrorHandler
     
-    If pMessageStream Is Nothing Then
+    If This.MessageStream Is Nothing Then
         CreateMessageStream StreamName
-        pStreamName = StreamName
+        This.StreamName = StreamName
     End If
     
-    pMessageStream.WriteBlankLines NumLines
+    This.MessageStream.WriteBlankLines NumLines
     
 Done:
     Exit Sub
@@ -140,13 +144,13 @@ Private Sub CreateMessageStream( _
     Dim DF As String
     DF = DesktopFolder
     
-    pMessageFolderPath = DF & Application.PathSeparator & FolderName
+    This.MessageFolderPath = DF & Application.PathSeparator & FolderName
     
-    If FSO.FolderExists(pMessageFolderPath) Then
+    If FSO.FolderExists(This.MessageFolderPath) Then
         ' Folder exists. Do nothing.
     Else
         ' Folder does not exist. Create it.
-        FSO.CreateFolder pMessageFolderPath
+        FSO.CreateFolder This.MessageFolderPath
     End If
    ' Message folder now exists on Desktop
    
@@ -155,20 +159,20 @@ Private Sub CreateMessageStream( _
     FileNumber = 1
     
     If OverWrite Then
-       FileName = pMessageFolderPath & Application.PathSeparator & StreamName
+       FileName = This.MessageFolderPath & Application.PathSeparator & StreamName
        
        If FSO.FileExists(FileName) Then
            FSO.DeleteFile FileName, True
        End If
     Else
-       While FSO.FileExists(pMessageFolderPath & Application.PathSeparator & StreamName & FileNumber & ".txt")
+       While FSO.FileExists(This.MessageFolderPath & Application.PathSeparator & StreamName & FileNumber & ".txt")
            FileNumber = FileNumber + 1
        Wend
     
-       FileName = pMessageFolderPath & Application.PathSeparator & StreamName & FileNumber & ".txt"
+       FileName = This.MessageFolderPath & Application.PathSeparator & StreamName & FileNumber & ".txt"
     End If
     
-    Set pMessageStream = FSO.CreateTextFile(FileName)
+    Set This.MessageStream = FSO.CreateTextFile(FileName)
  
 Done:
     Exit Sub
@@ -182,22 +186,21 @@ End Sub ' CreateMessageStream
 
 Private Sub Class_Terminate()
     ' Tell the user if a message file was created
-    If Right(pStreamName, 4) = ".cls" Or Right(pStreamName, 4) = ".bas" Then
-        pMessageStream.Close
-        Set pMessageStream = Nothing
+    If Right$(This.StreamName, 4) = ".cls" Or Right$(This.StreamName, 4) = ".bas" Then
+        This.MessageStream.Close
+        Set This.MessageStream = Nothing
         GoTo Done
     End If
     
-    If Not pMessageStream Is Nothing Then
-        MsgBox "Check the " & pStreamName & " folder on your Desktop." & vbCrLf _
-             & "See the " & pStreamName & " file in that folder " & _
-               "for a list of the " & pStreamName & " found.", _
+    If Not This.MessageStream Is Nothing Then
+        MsgBox "Check the " & This.StreamName & " folder on your Desktop." & vbCrLf _
+             & "See the " & This.StreamName & " file in that folder " & _
+               "for a list of the " & This.StreamName & " found.", _
                vbOKOnly Or vbExclamation, _
-               pStreamName & " Messages Found"
-        pMessageStream.Close
-        Set pMessageStream = Nothing
+               This.StreamName & " Messages Found"
+        This.MessageStream.Close
+        Set This.MessageStream = Nothing
     End If
 Done:
 End Sub ' Class_Terminate
-
 
