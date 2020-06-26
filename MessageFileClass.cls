@@ -186,7 +186,7 @@ End Sub ' CreateMessageStream
 
 Private Sub Class_Terminate()
     ' Tell the user if a message file was created
-    If Right$(This.StreamName, 4) = ".cls" Or Right$(This.StreamName, 4) = ".bas" Then
+    If Strings.Right$(This.StreamName, 4) = ".cls" Or Strings.Right$(This.StreamName, 4) = ".bas" Then
         This.MessageStream.Close
         Set This.MessageStream = Nothing
         GoTo Done
