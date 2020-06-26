@@ -29,6 +29,10 @@ Public Function TryCopyDictionaryToTable( _
     Const RoutineName As String = Module_Name & "CopyDictionaryToTable"
     On Error GoTo ErrorHandler
     
+    If Dict.Count = 0 Then
+        GoTo Done
+    End If
+    
     TryCopyDictionaryToTable = True
     
     If TableType.IsDatabase And Not CopyToTableRegardless Then
@@ -346,6 +350,8 @@ Public Function TryReadDatabaseToArray( _
 Done:
     Exit Function
 ErrorHandler:
+    TryReadDatabaseToArray = False
+    
     ReportError "Exception raised", _
                 "Routine", RoutineName, _
                 "Error Number", Err.Number, _
