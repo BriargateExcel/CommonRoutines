@@ -182,9 +182,11 @@ End Function ' TryCopyDictionaryToExcelTable
 Public Function TryCopyTableToDictionary( _
     ByVal TableType As iTable, _
     ByRef Dict As Dictionary, _
-    ByVal Tbl As ListObject, _
+    Optional ByVal Tbl As ListObject = Nothing, _
     Optional ByVal ReadFromDatabase As Boolean = True _
     ) As Boolean
+' 7/5/2020
+'   Made Tbl optional to force a reference to TableType.LocalTable
 
     ' Copies a table to a dictionary
 
@@ -205,6 +207,8 @@ Public Function TryCopyTableToDictionary( _
             GoTo Done
         End If
     Else
+        If Tbl Is Nothing Then Set Tbl = TableType.LocalTable
+        
         If TryCopyExcelTableToArray(TableType, Ary, Tbl) Then
         Else
             ReportError "Error copying table to array", _
